@@ -1,11 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
-using System.Net;
-using System.Net.Sockets;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -16,6 +12,10 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Net;
+using System.Net.Sockets;
+using System.Threading;
+using System.Text.Json;
 
 namespace Server
 {
@@ -24,126 +24,156 @@ namespace Server
     /// </summary>
     public partial class MainWindow : Window
     {
-        private Socket? listenSocket;
-        bool server = false;
+        private Socket? listenSocket;   // слушающий сокет - постоянно активный при вкл сервере
+        private List<ChatMessage> messages;  // все приходящие сообщения - сохраняются на сервере
         public MainWindow()
         {
             InitializeComponent();
+            messages = new();
         }
 
-        private void StartButton_Click(object sender, RoutedEventArgs e)
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            StartServer_Click(sender, e);
+        }
+
+        private void StartServer_Click(object sender, RoutedEventArgs e)
         {
             IPEndPoint endpoint;
-
             try
             {
-                IPAddress ip = IPAddress.Parse(serverIp.Text);
-                int port = Convert.ToInt32(serverPort.Text);
-                endpoint = new IPEndPoint(ip, port);
+                IPAddress ip =               // На окне IP - это текст ("127.0.0.1")
+                    IPAddress.Parse(         // Для его перевода в число используется
+                        serverIp.Text);      // IPAddress.Parse
+                int port =                   // Аналогично - порт
+                    Convert.ToInt32(         // парсим число из текста
+                        serverPort.Text);    // 
+                endpoint =                   // endpoint - комбинация IP и порта
+                    new(ip, port);           // 
             }
             catch
             {
-                MessageBox.Show("Check start network parametrs");
+                MessageBox.Show("Check start network parameters");
                 return;
             }
-            listenSocket = new Socket(
-                AddressFamily.InterNetwork,
-                SocketType.Stream,
-                ProtocolType.Tcp);
+            listenSocket = new(               // создаем слушающий сокет
+                AddressFamily.InterNetwork,   // адресация IPv4
+                SocketType.Stream,            // Двусторонний сокет (и читать, и писать)
+                ProtocolType.Tcp);            // Протокол сокета - ТСР
 
-
-            // Постоянно актывный слушающий сокет
-            // заюлокирует UI если его не отделитьв отдельный поток
-
-            if (server)
-            {
-                serverLogs.Text += "Server is already Started\n";
-                return;
-            }
-            new Thread(StartServer).Start(endpoint);
-            server = true;
+            // постоянно активный слушающий сокет заблокирует UI если его не
+            // отделить в свой поток
+            new Thread(StartServerMethod).Start(endpoint);
         }
-
-        private void StartServer(object? param)
+        private void StartServerMethod(object? param)
         {
-            if (listenSocket == null) return;
+            if (listenSocket is null) return;
             IPEndPoint? endpoint = param as IPEndPoint;
-            if (endpoint == null) return;
+            if (endpoint is null) return;
 
             try
             {
-                listenSocket.Bind(endpoint);
-                listenSocket.Listen(100);
-                byte[] buf = new byte[1024];
-
-                Dispatcher.Invoke(() => serverLogs.Text += $"Server started\n");
-                Dispatcher.Invoke(() => { serverStatus.Content = "ON"; serverStatus.Foreground = new SolidColorBrush(Colors.LimeGreen);} );
-
-                while (true) 
-                {
-                    // Ждём подключения 
-                    Socket socket =
-                        listenSocket.Accept();
-
-
-                    // Получаем строку
-                    StringBuilder sb = new StringBuilder();
+                listenSocket.Bind(endpoint);   // "привязываем" сервер к endpoint
+                listenSocket.Listen(100);      // стартуем прослушку, разрешаем очередь из 100 сообщений
+                Dispatcher.Invoke(() =>        // Добавляем  к логам
+                    serverLogs.Text +=         // информацию о старте сервера. 
+                        "Server started\n");   //
+                byte[] buf = new byte[1024];   // буфер приема данных
+                while (true)                   // бесконечный цикл прослушки порта
+                {                              // 
+                    Socket socket =            // Ожидание подключения и создание 
+                        listenSocket.Accept(); // обменного сокета с клиентом
+                    // --------------------- соединение установлено ----------------------
+                    // Начинаем прием данных
+                    StringBuilder sb = new();
                     do
                     {
-                        int n = socket.Receive(buf);
-                        sb.Append(Encoding.UTF8.GetString(buf, 0, n));
-                    } while (socket.Available > 0);
+                        int n =                      // сохраняем "порцию" данных в буфер
+                            socket.Receive(buf);     // и получаем кол-во переданных байт (n) 
+                        sb.Append(                   // Переводим полученные байты в 
+                            Encoding.UTF8            // строку согласно кодировке UTF8
+                            .GetString(buf, 0, n));  // и накапливаем в StringBuilder
+                    } while (socket.Available > 0);  // Пока есть данные в сокете
 
-                    // Запись в логи
-                    String str = sb.ToString();
-                    Dispatcher.Invoke(() => serverLogs.Text += $"{str}\n" );
+                    String str = sb.ToString();      // собираем все фрагменты в одну строку
+                                                     // Dispatcher.Invoke(() =>          // Добавляем полученные данные к логам
+                                                     //     serverLogs.Text +=           // сервера. Используем Dispatcher
+                                                     //         str + "\n");             // для доступа к UI
 
-                    // Отправляем ответ
-                    str = $"Received at {DateTime.Now}";
-                    socket.Send(Encoding.UTF8.GetBytes(str));
+                    // Разбираем JSON
+                    var request = JsonSerializer.Deserialize<ClientRequest>(str);
+                    // Определяем тип запроса (action) и готовим ответ
+                    ServerResponse response = new();
+                    switch (request?.Action)
+                    {
+                        case "Message":
+                            // извлекаем сообщение из запроса
+                            ChatMessage message = new()
+                            {
+                                Author = request.Author,
+                                Text = request.Text,
+                                Moment = request.Moment
+                            };
+                            // сохраняем его в коллекции сервера
+                            messages.Add(message);
+                            // передаем его же как подтверждение получения
+                            response.Status = "OK";
+                            response.Messages = new() { message };
+                            Dispatcher.Invoke(() => serverLogs.Text +=
+                                $"{request.Moment.ToString()} {request.Author}: {request.Text}\n");
+                            break;
+                        case "Get":
+                            String Author = request.Author;
+                            DateTime lastSyncMoment = request.Moment;
+                            // собираем сообщение НЕ данного автора, время которых старше lastSyncMoment
+                            response.Status = "OK";
+                            response.Messages = new();
+                            foreach (var m in messages)
+                            {
+                                if (!m.Author.Equals(Author) && m.Moment > lastSyncMoment)
+                                {
+                                    response.Messages.Add(m);
+                                }
+                            }
+                            break;
+                        default:
+                            response.Status = "Error";
+                            break;
+                    }
+
+                    // Отправляем клиенту ответ
+                    str = JsonSerializer             // В обратном порядке - 
+                        .Serialize(response,         // сначала строка
+                        new JsonSerializerOptions() { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+                    socket.Send(                     // затем переводим в байты
+                        Encoding.UTF8                // по заданной кодировке
+                        .GetBytes(str));             // и отправляем в сокет
 
 
-                    // Закрываем
-                    socket.Shutdown(SocketShutdown.Both);
-                    socket.Dispose();
+                    socket.Shutdown(                 // Закрываем соединение - 
+                        SocketShutdown.Both);        // отключаем сокет c уведомлением клиента
+                    socket.Dispose();                // Освобождаем ресурс
                 }
             }
             catch (Exception ex)
             {
-                Dispatcher.Invoke( () => serverLogs.Text += $"Server stoped {ex.Message}\n");
-                server = false;
+                Dispatcher.Invoke(() =>              // Логируем исключение
+                    serverLogs.Text +=               // и уведомляем об остановке
+                    "Server stopped "                // сервера
+                    + ex.Message + "\n");            // 
             }
         }
 
-        private void StopButton_Click(object sender, RoutedEventArgs e)
+        private void StopServer_Click(object sender, RoutedEventArgs e)
         {
-            StopServer();
-        }
-
-        private void StopServer()
-        {
-            if (listenSocket == null)
-            {
-                serverLogs.Text += "Server is already Stoped\n";
-                return;
-            }
-            if (!server)
-            {
-                serverLogs.Text += "Server is already Stoped\n";
-                return;
-            }
-
+            // Остановить бесконечный цикл можно только выбросом исключения
             listenSocket?.Close();
-            server = false;
-
-            serverStatus.Content = "OFF";
-            serverStatus.Foreground = new SolidColorBrush(Colors.Red);
-            serverLogs.Text += "Server Stoped\n";
         }
 
-        private void Window_Closed(object sender, EventArgs e)
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            StopServer();
+            listenSocket?.Close();
         }
+
     }
 }

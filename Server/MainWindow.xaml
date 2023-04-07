@@ -5,29 +5,42 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Server"
         mc:Ignorable="d"
-        Closed="Window_Closed"
-        Title="MainWindow" Height="450" Width="400">
+        Closing="Window_Closing"
+        Title="Server" Height="450" Width="300">
 
-    <StackPanel Orientation="Vertical"  Margin="5">
-        <StackPanel Orientation="Horizontal" Margin="10 5">
-            <Label Content="IP:"/>
-            <TextBox x:Name="serverIp" Text="127.0.0.1" Margin="0 0 20 0" VerticalAlignment="Center" Padding="2"/>
-            
-            <Label Content="Port:"/>
-            <TextBox x:Name="serverPort" Text="8090" VerticalAlignment="Center"  Padding="2"/>
-        </StackPanel>
-        <StackPanel Orientation="Horizontal" Margin="10 5">
-            <Button Content="Start" Name="StartButton" Click="StartButton_Click"
-                    Padding="10 5" Background="LimeGreen" Foreground="White"/>
-            
-            <Label x:Name="serverStatus" Content="OFF" Margin="0 0 10 0" FontWeight="Bold" Foreground="Red"/>
-            
-            <Button Content="Stop" Name="StopButton" Click="StopButton_Click"
-                    Padding="10 5" Background="Red" Foreground="White"/>
-        </StackPanel>
 
-        <Label FontSize="14">Server Logs:</Label>
-        <TextBlock x:Name="serverLogs" Margin="5" TextWrapping="Wrap"/>
-    </StackPanel>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
 
+        <Label Grid.Row="0" Grid.Column="0" VerticalContentAlignment="Center">IP:</Label>
+        <TextBox Grid.Row="0" Grid.Column="1" VerticalContentAlignment="Center"
+            x:Name="serverIp">127.0.0.1</TextBox>
+
+        <Label Grid.Row="0" Grid.Column="2" VerticalContentAlignment="Center">Port:</Label>
+        <TextBox Grid.Row="0" Grid.Column="3" x:Name="serverPort" VerticalContentAlignment="Center">8090</TextBox>
+
+        <Button Grid.Row="1" Grid.Column="0"
+                Background="LimeGreen" Foreground="White" BorderBrush="Transparent"
+                x:Name="StartServer" Click="StartServer_Click">START</Button>
+        <Label Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                HorizontalAlignment="Center" x:Name="serverStatus">OFF</Label>
+        <Button Grid.Row="1" Grid.Column="3"
+                Background="Red" Foreground="White" BorderBrush="Transparent"
+                x:Name="StopServer" Click="StopServer_Click">STOP</Button>
+
+        <ScrollViewer Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4">
+            <TextBlock
+                x:Name="serverLogs" TextWrapping="Wrap" Text="Server Logs:&#x0a;"/>
+        </ScrollViewer>
+    </Grid>
 </Window>

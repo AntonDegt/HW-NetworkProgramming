@@ -5,26 +5,82 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Client"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="400">
-
-    <StackPanel Orientation="Vertical" Margin="5">
-        <StackPanel Orientation="Horizontal" Margin="10 5">
-            <Label Content="Server IP:"/>
-            <TextBox x:Name="serverIp" Text="127.0.0.1" Margin="0 0 20 0" VerticalAlignment="Center" Padding="2"/>
-            
-            <Label Content="Port:"/>
-            <TextBox x:Name="serverPort" Text="8090" VerticalAlignment="Center" Padding="2"/>
-        </StackPanel>
         
-        <Label>Port:</Label>
-        <TextBox x:Name="Message" Padding="3" VerticalAlignment="Center" TextWrapping="Wrap">Hello!</TextBox>
+        Title="Client" Height="450" Width="300" Loaded="Window_Loaded">
 
-        <Button Name="SendButton" Click="SendButton_Click" Padding="0 3" 
-                Background="DarkGray" FontWeight="Bold" Foreground="White">
-            Send</Button>
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
         
-        <Label FontSize="14">Chat Logs:</Label>
-        <TextBlock x:Name="chatLogs" Margin="5" TextWrapping="Wrap"/>
-    </StackPanel>
+        <Style x:Key="Date" TargetType="Border">
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="Background" Value="LightSeaGreen" />
+            <Setter Property="Margin" Value="3"/>
+            <Setter Property="Padding" Value="4"/>
+        </Style>
+        <Style x:Key="Me" TargetType="Border">
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="Background" Value="LightSkyBlue" />
+            <Setter Property="Margin" Value="3"/>
+            <Setter Property="Padding" Value="4"/>
+        </Style>
+        <Style x:Key="They" TargetType="Border">
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="Background" Value="DeepSkyBlue" />
+            <Setter Property="Margin" Value="3"/>
+            <Setter Property="Padding" Value="4"/>
+        </Style>
+        <Style x:Key="Error" TargetType="Border">
+            <Setter Property="CornerRadius" Value="5" />
+            <Setter Property="Margin" Value="3"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Background" Value="Red"/>
+        </Style>
+    </Window.Resources>
     
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="40"/>
+            <RowDefinition Height="60"/>
+            <RowDefinition/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+
+        <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">Server IP:</Label>
+        <TextBox Grid.Row="0" Grid.Column="1" VerticalAlignment="Center"
+                  x:Name="serverIp">127.0.0.1</TextBox>
+        <Label Grid.Row="0" Grid.Column="2" VerticalAlignment="Center">Port:</Label>
+        <TextBox Grid.Row="0" Grid.Column="3" VerticalAlignment="Center"
+                  x:Name="serverPort">8090</TextBox>
+        <Label Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" >Nick:</Label>
+        <TextBox Grid.Row="1" Grid.Column="1" VerticalAlignment="Center"
+                 x:Name="authorTextBox"></TextBox>
+        <Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Message:</Label>
+        <ScrollViewer Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="3" >
+        <TextBox VerticalAlignment="Center" TextWrapping="Wrap" Height="60"
+                 x:Name="messageTextBox">Hello!</TextBox>
+        </ScrollViewer>
+        <Button Grid.Row="1" Grid.Column="2" Grid.ColumnSpan="2" Grid.RowSpan="1"
+                BorderBrush="Transparent" BorderThickness="5" Background="RoyalBlue" Foreground="White"
+                x:Name="SendButton" Click="SendButton_Click">Send</Button>
+        
+        
+        <ScrollViewer Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="4" Padding="2">
+            <StackPanel x:Name="chatContainer">
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
 </Window>

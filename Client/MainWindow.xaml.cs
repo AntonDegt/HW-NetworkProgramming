@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -22,56 +24,221 @@ namespace Client
     /// </summary>
     public partial class MainWindow : Window
     {
+        private byte[] buffer = new byte[1024];
+        private IPEndPoint? endpoint;
+        private DateTime lastSyncMoment;
+        private Random random;
+
+        private DateTime? lastDate = null;
+
         public MainWindow()
         {
             InitializeComponent();
+            lastSyncMoment = DateTime.MinValue;
+            random = new();
+        }
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            authorTextBox.Text = $"User{random.Next(1, 1000)}";
+            ReCheckMessages();
+        }
+
+        private IPEndPoint? InitEndpoint()
+        {
+            if (endpoint is not null) return endpoint;
+            try
+            {
+                IPAddress ip =               // На окне IP - это текст ("127.0.0.1")
+                    IPAddress.Parse(         // Для его перевода в число используется
+                        serverIp.Text);      // IPAddress.Parse
+                int port =                   // Аналогично - порт
+                    Convert.ToInt32(         // парсим число из текста
+                        serverPort.Text);    // 
+                endpoint =                   // endpoint - комбинация IP и порта
+                    new(ip, port);           // 
+                return endpoint;
+            }
+            catch
+            {
+                MessageBox.Show("Check server network parameters");
+                return null;
+            }
         }
 
         private void SendButton_Click(object sender, RoutedEventArgs e)
         {
-            IPEndPoint endpoint;
+            if ((endpoint = InitEndpoint()) is null) return;
 
-            try
+            ChatMessage chatMessage = new()
             {
-                IPAddress ip = IPAddress.Parse(serverIp.Text);
-                int port = Convert.ToInt32(serverPort.Text);
-                endpoint = new IPEndPoint(ip, port);
-            }
-            catch
-            {
-                MessageBox.Show("Check server network parametrs");
-                return;
-            }
+                Author = authorTextBox.Text,
+                Text = messageTextBox.Text,
+                Moment = DateTime.Now
+            };
+            SendMessage(chatMessage);
+        }
 
-            Socket clientSocket = new Socket(
-                AddressFamily.InterNetwork,
-                SocketType.Stream,
-                ProtocolType.Tcp);
+        private void SendMessage(ChatMessage chatMessage)
+        {
+            if ((endpoint = InitEndpoint()) is null) return;
 
+            Socket clientSocket = new(        // создаем сокет подключения
+                AddressFamily.InterNetwork,   // адресация IPv4
+                SocketType.Stream,            // Двусторонний сокет (и читать, и писать)
+                ProtocolType.Tcp);            // Протокол сокета - ТСР
             try
             {
                 clientSocket.Connect(endpoint);
-                clientSocket.Send(Encoding.UTF8.GetBytes(Message.Text));
-
-                clientSocket.Listen(100);
-                byte[] buf = new byte[1024];
-                StringBuilder sb = new StringBuilder();
-                do
+                // --------------------- соединение установлено ----------------------
+                // сервер начинает с приема данных, поэтому клиент начинает с посылки
+                // формируем объект-запрос
+                ClientRequest request = new()
                 {
-                    int n = clientSocket.Receive(buf);
-                    sb.Append(Encoding.UTF8.GetString(buf, 0, n));
-                } while (clientSocket.Available > 0);
+                    Action = "Message",
+                    Author = chatMessage.Author,
+                    Text = chatMessage.Text,
+                    Moment = chatMessage.Moment
+                };
 
-                // Запись в логи
-                String str = sb.ToString();
+                SendRequest(clientSocket, request);
+                var response = GetServerResponse(clientSocket);
+
+                if (response is not null && response.Messages is not null)
+                {
+                    var message = response.Messages[0];
+                    MeMessage(message);
+                }
+                else
+                {
+                    ErrorMessage("Ошибка доставки сообщения");
+                }
 
                 clientSocket.Shutdown(SocketShutdown.Both);
                 clientSocket.Dispose();
             }
             catch (Exception ex)
             {
-                chatLogs.Text += ex.Message + "\n";
+                ErrorMessage(ex.Message);
             }
+        }
+
+        private async void ReCheckMessages()
+        {
+            // Проверить есть ли новые сообщения
+            if ((endpoint = InitEndpoint()) is null) return;
+
+            // новый запрос начинается с нового соединения
+            Socket clientSocket = new(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            try
+            {
+                clientSocket.Connect(endpoint);
+                ClientRequest request = new()
+                {
+                    Action = "Get",
+                    Author = authorTextBox.Text,
+                    Moment = lastSyncMoment   // момент последней сверки сообщений
+                };
+                lastSyncMoment = DateTime.Now;   // обновляем момент последней сверки сообщений
+
+                SendRequest(clientSocket, request);
+
+                var response = GetServerResponse(clientSocket);
+
+                if (response is not null && response.Messages is not null)
+                {
+                    foreach (ChatMessage message in response.Messages)
+                    {
+                        TheyMessage(message);
+                    }
+                }
+                clientSocket.Shutdown(SocketShutdown.Both);
+                clientSocket.Dispose();
+
+                // цикл - отложенный перезапуск
+                await Task.Delay(1000);
+                ReCheckMessages();
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage(ex.Message);
+            }
+        }
+
+        private void SendRequest(Socket clientSocket, ClientRequest request)
+        {
+            // преобразуем объект в JSON
+            String json = JsonSerializer.Serialize(request,
+                new JsonSerializerOptions()
+                {
+                    Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                });
+            // отправляем на сервер
+            clientSocket.Send(Encoding.UTF8.GetBytes(json));
+        }
+
+        private ServerResponse? GetServerResponse(Socket clientSocket)
+        {
+            MemoryStream stream = new();               // Другой способ получения
+            do                                         // данных - собирать части
+            {                                          // бинарного потока в 
+                int n = clientSocket.Receive(buffer);  // память.
+                stream.Write(buffer, 0, n);            // Затем создать строку
+            } while (clientSocket.Available > 0);      // один раз пройдя
+                                                       // все полученные байты.
+            String str = Encoding.UTF8.GetString(stream.ToArray());
+            // Декодируем его из JSON
+            return JsonSerializer.Deserialize<ServerResponse>(str);
+        }
+
+        private void ErrorMessage(string message) 
+        {
+            Border border = new Border();
+            border.Style = this.FindResource("Error") as Style;
+            TextBlock text = new TextBlock();
+            text.Text = message;
+            border.Child = text;
+
+            chatContainer.Children.Add(border);
+        }
+        private void DateMessage(DateTime date)
+        {
+            Border border = new Border();
+            border.Style = this.FindResource("Date") as Style;
+            TextBlock text = new TextBlock();
+
+            text.Text = date.ToShortDateString();
+            border.Child = text;
+
+            chatContainer.Children.Add(border);
+        }
+        private void CheckDate(DateTime date)
+        {
+            if (lastDate == null)
+                lastDate = date;
+            if (lastDate == date)
+                return;
+
+            DateMessage(date);
+        }
+        private void MeMessage(ChatMessage message)
+        {
+            Border border = new Border();
+            border.Style = this.FindResource("Me") as Style;
+            TextBlock text = new TextBlock();
+            text.Text = $"{message.Text}\n{message.Moment.ToShortTimeString()}";
+            border.Child = text;
+
+            chatContainer.Children.Add(border);
+        }
+        private void TheyMessage(ChatMessage message)
+        {
+            Border border = new Border();
+            border.Style = this.FindResource("They") as Style;
+            TextBlock text = new TextBlock();
+            text.Text = $"{message.Author}: {message.Text}\n{message.Moment.ToShortTimeString()}";
+            border.Child = text;
+
+            chatContainer.Children.Add(border);
         }
     }
 }
