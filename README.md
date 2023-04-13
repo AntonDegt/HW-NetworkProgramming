@@ -48,3 +48,13 @@
 
 
 ![image](https://user-images.githubusercontent.com/108671823/231782266-98026f8d-64a8-43eb-8401-1f6a51085493.png)
+
+
+
+# Домашнее задание №4
+
+
+- Реализовать элемент выбора даты и вывести курсы валют из API НБУ на выбранную дату
+
+
+![image](https://user-images.githubusercontent.com/108671823/231845755-517d6e3d-607b-4abb-bb83-667fe73b7845.png)
