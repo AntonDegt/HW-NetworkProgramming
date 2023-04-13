@@ -5,41 +5,21 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:HTTP"
         mc:Ignorable="d"
-        Title="MainWindow" Height="500" Width="900">
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="2*"/>
-            <ColumnDefinition Width="3*"/>
-        </Grid.ColumnDefinitions>
+        Title="MainWindow" Height="500" Width="400">
 
-        <StackPanel Grid.Column="0" Margin="5">
-            <TextBox x:Name="urlTextBox" 
-                     FontSize="18" Padding="2" Margin="2" BorderThickness="2">https://itstep.org</TextBox>
-            <Button x:Name="GetButton"  Click="GetButton_Click" 
-                    FontSize="18" Padding="2" Margin="2" Background="Transparent" FontWeight="Bold" BorderThickness="2">GET</Button>
-            <Button x:Name="GetFullButton"  Click="GetFullButton_Click" 
-                    FontSize="18" Padding="2" Margin="2" Background="Transparent" FontWeight="Bold" BorderThickness="2">GET FULL</Button>
-            <Button x:Name="HeadButton"  Click="HeadButton_Click" 
-                    FontSize="18" Padding="2" Margin="2" Background="Transparent" FontWeight="Bold" BorderThickness="2">HEAD</Button>
-            <Button x:Name="OptionsButton"  Click="OptionsButton_Click" 
-                    FontSize="18" Padding="2" Margin="2" Background="Transparent" FontWeight="Bold" BorderThickness="2">OPTIONS</Button>
-            <Button x:Name="Get2Button"  Click="Get2Button_Click" 
-                    FontSize="18" Padding="2" Margin="2" Background="Transparent" FontWeight="Bold" BorderThickness="2">GET</Button>
-            <Button x:Name="RandPasswordButton"  Click="RandPasswordButton_Click" 
-                    FontSize="18" Padding="2" Margin="2" Background="Transparent" FontWeight="Bold" BorderThickness="2">Random Password</Button>
-        </StackPanel>
+    <StackPanel Margin="15">
+        <Label HorizontalContentAlignment="Center" FontSize="22" FontWeight="Bold" Margin="0 0 0 10">Сетевое программирование</Label>
 
-        <Grid Grid.Column="1" Margin="5">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="40"/>
-                <RowDefinition/>
-            </Grid.RowDefinitions>
-            <Label Grid.Row="0"
-                Margin="2" Padding="2" HorizontalContentAlignment="Center" FontWeight="Bold" FontSize="18">Результат:</Label>
-            <ScrollViewer Grid.Row="1">
-                <TextBox x:Name="resultTextBlock" FontSize="16" TextWrapping="Wrap" IsReadOnly="True"/>
-            </ScrollViewer>
-        </Grid>
+        <Button x:Name="CharServer" Click="CharServer_Click" Margin="0 0 0 4"
+            Padding="5" FontSize="18" Foreground="Black" Background="White">Chat - Server</Button>
+        <Button x:Name="ChatClient" Click="ChatClient_Click" Margin="0 0 0 10"
+            Padding="5" FontSize="18" Foreground="Black" Background="White">Chat - Client</Button>
 
-    </Grid>
+        <Button x:Name="HttpRequests" Click="HttpRequests_Click" Margin="0 0 0 10"
+            Padding="5" FontSize="18" Foreground="Black" Background="White">HTTP Requests</Button>
+
+        <Button x:Name="Api" Click="Api_Click" Margin="0 0 0 10"
+            Padding="5" FontSize="18" Foreground="Black" Background="White">API</Button>
+    </StackPanel>
+    
 </Window>
