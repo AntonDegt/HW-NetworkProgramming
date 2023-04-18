@@ -1,0 +1,28 @@
+﻿<Window x:Class="HTTP.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:HTTP"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="500" Width="400">
+
+    <StackPanel Margin="15">
+        <Label HorizontalContentAlignment="Center" FontSize="22" FontWeight="Bold" Margin="0 0 0 10">Сетевое программирование</Label>
+
+        <Button x:Name="CharServer" Click="CharServer_Click" Margin="0 0 0 4"
+            Padding="5" FontSize="18" Foreground="Black" Background="White">Chat - Server</Button>
+        <Button x:Name="ChatClient" Click="ChatClient_Click" Margin="0 0 0 10"
+            Padding="5" FontSize="18" Foreground="Black" Background="White">Chat - Client</Button>
+
+        <Button x:Name="HttpRequests" Click="HttpRequests_Click" Margin="0 0 0 10"
+            Padding="5" FontSize="18" Foreground="Black" Background="White">HTTP Requests</Button>
+
+        <Button x:Name="Api" Click="Api_Click" Margin="0 0 0 10"
+            Padding="5" FontSize="18" Foreground="Black" Background="White">API</Button>
+
+        <Button x:Name="Coincap" Click="Coincap_Click" Margin="0 0 0 10"
+            Padding="5" FontSize="18" Foreground="Black" Background="White">CoinCap</Button>
+    </StackPanel>
+    
+</Window>
