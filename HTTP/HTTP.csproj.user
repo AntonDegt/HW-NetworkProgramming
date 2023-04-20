@@ -10,12 +10,24 @@
     <Compile Update="ApiWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="CoincapWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="SMTPWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Page Update="ApiWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
+    <Page Update="CoincapWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
     <Page Update="MainWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="SMTPWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
   </ItemGroup>

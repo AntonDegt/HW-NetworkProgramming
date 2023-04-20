@@ -1,0 +1,11 @@
+{
+  "smtp": {
+    "gmail": {
+      "host": "smtp.gmail.com",
+      "port": 587,
+      "email": "CHANGE_ME",
+      "password": "CHANGE_ME",
+      "ssl": true
+    }
+  }
+}

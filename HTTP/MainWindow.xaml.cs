@@ -60,5 +60,15 @@ namespace HTTP
         {
             new ApiWindow().Show();
         }
+
+        private void Coincap_Click(object sender, RoutedEventArgs e)
+        {
+            new CoincapWindow().Show();
+        }
+
+        private void SMTP_Click(object sender, RoutedEventArgs e)
+        {
+            new SMTPWindow().Show();
+        }
     }
 }
